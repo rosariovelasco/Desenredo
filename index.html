@@ -386,51 +386,38 @@ function recalcSplits(changedInput) {
   if (!amt) return;
 
   const part = g.members.filter(m => S.splits[m]);
-  
-  // Read current values from DOM (source of truth while typing)
-  const vals = {};
+  const name = changedInput.dataset.member;
+
+  // Mark this field as manually set (locked)
+  if (!S._lockedSplits) S._lockedSplits = {};
+  S._lockedSplits[name] = true;
+  S.customSplits[name] = changedInput.value;
+
+  // Sum locked fields
+  const maxVal = S.splitMode === "percent" ? 100 : amt;
+  let lockedTotal = 0;
   part.forEach(m => {
-    const inp = $("cs_" + m);
-    vals[m] = inp ? parseFloat(inp.value || 0) : 0;
+    if (S._lockedSplits[m]) lockedTotal += parseFloat(S.customSplits[m] || 0);
   });
 
-  // Save changed value to state
-  const changedMember = changedInput.dataset.member;
-  S.customSplits[changedMember] = changedInput.value;
-
-  // Find members with no value (excluding the one being typed)
-  const filledTotal = part.reduce((sum, m) => {
-    if ($("cs_"+m) === changedInput) return sum + parseFloat(changedInput.value || 0);
-    return sum + (vals[m] || 0);
-  }, 0);
-
-  const emptyMembers = part.filter(m => {
-    if ($("cs_"+m) === changedInput) return false;
-    return !vals[m] || vals[m] === 0;
-  });
-
-  if (emptyMembers.length > 0) {
-    const remaining = Math.max(0, (S.splitMode === "percent" ? 100 : amt) - filledTotal);
-    const suggested = Math.round(remaining / emptyMembers.length);
-    emptyMembers.forEach(m => {
+  // Distribute remaining among unlocked fields
+  const unlocked = part.filter(m => !S._lockedSplits[m]);
+  if (unlocked.length > 0) {
+    const remaining = Math.max(0, maxVal - lockedTotal);
+    const suggested = Math.round(remaining / unlocked.length);
+    unlocked.forEach(m => {
       S.customSplits[m] = String(suggested);
       const inp = $("cs_" + m);
       if (inp) inp.value = suggested > 0 ? suggested : "";
     });
   }
 
-  // Update all state from DOM
-  part.forEach(m => {
-    const inp = $("cs_" + m);
-    if (inp) S.customSplits[m] = inp.value;
-  });
-
-  // Show remaining indicator
+  // Show status
   const total = part.reduce((s, m) => s + parseFloat(S.customSplits[m] || 0), 0);
-  const diff = (S.splitMode === "percent" ? 100 : amt) - total;
+  const diff = maxVal - total;
   const remEl = $("split-remaining");
   if (remEl) {
-    remEl.textContent = Math.abs(diff) < 1 ? "✓ Cuadra perfecto" :
+    remEl.textContent = Math.abs(diff) < 1 ? "✓ Cuadra" :
       diff > 0 ? `Faltan ${S.splitMode === "percent" ? Math.round(diff)+"%" : clp(diff)}` :
       `Excede ${S.splitMode === "percent" ? Math.round(Math.abs(diff))+"%" : clp(Math.abs(diff))}`;
     remEl.style.color = Math.abs(diff) < 1 ? "var(--mint)" : "var(--red)";
