@@ -564,6 +564,15 @@ function draw() {
   const screens={home:drawHome,newGroup:drawNewGroup,group:drawGroup,newExpense:drawNewExpense,expenseDetail:drawDetail,addMember:drawAddMember};
   $("app").innerHTML=(screens[S.screen]||drawHome)();
   restoreSnap();
+  attachSplitListeners();
+}
+
+function attachSplitListeners() {
+  document.querySelectorAll("[data-split='true']").forEach(function(inp) {
+    inp.removeEventListener("input", inp._splitHandler);
+    inp._splitHandler = function() { recalcSplits(this); };
+    inp.addEventListener("input", inp._splitHandler);
+  });
 }
 
 function restoreSnap() {
@@ -780,7 +789,7 @@ function drawNewExpense() {
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
             ${av(m,g,28)}
             <div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${m}</div>
-            <input type="number" id="cs_${m}" data-split="true" data-member="${m}" placeholder="0" value="${S.customSplits[m]||""}"
+            <input type="number" id="cs_${m}" data-split="true" data-member="${m}" placeholder="0" value="${S.customSplits[m]||""}" autocomplete="off"
               style="width:88px;background:#fff;border:1.5px solid var(--border);border-radius:10px;
               padding:8px;font-size:14px;font-family:inherit;color:var(--text);outline:none;text-align:right;
               -webkit-user-select:text;user-select:text">
