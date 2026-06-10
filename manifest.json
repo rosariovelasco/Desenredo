@@ -1,0 +1,17 @@
+{
+  "name": "DESENREDO",
+  "short_name": "DESENREDO",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#2D9E7A",
+  "theme_color": "#2D9E7A",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "scope": "/"
+}
