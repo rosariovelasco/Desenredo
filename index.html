@@ -380,6 +380,65 @@ function doSetSplitMode(mode){
   go({splitMode:mode, customSplits});
 }
 
+function recalcSplits(changedInput) {
+  const g = grp(); if (!g) return;
+  const amt = parseFloat($("ia")?.value || 0);
+  if (!amt) return;
+
+  const part = g.members.filter(m => S.splits[m]);
+  
+  // Read current values from DOM (source of truth while typing)
+  const vals = {};
+  part.forEach(m => {
+    const inp = $("cs_" + m);
+    vals[m] = inp ? parseFloat(inp.value || 0) : 0;
+  });
+
+  // Save changed value to state
+  const changedMember = changedInput.dataset.member;
+  S.customSplits[changedMember] = changedInput.value;
+
+  // Find members with no value (excluding the one being typed)
+  const filledTotal = part.reduce((sum, m) => {
+    if ($("cs_"+m) === changedInput) return sum + parseFloat(changedInput.value || 0);
+    return sum + (vals[m] || 0);
+  }, 0);
+
+  const emptyMembers = part.filter(m => {
+    if ($("cs_"+m) === changedInput) return false;
+    return !vals[m] || vals[m] === 0;
+  });
+
+  if (emptyMembers.length > 0) {
+    const remaining = Math.max(0, (S.splitMode === "percent" ? 100 : amt) - filledTotal);
+    const suggested = Math.round(remaining / emptyMembers.length);
+    emptyMembers.forEach(m => {
+      S.customSplits[m] = String(suggested);
+      const inp = $("cs_" + m);
+      if (inp) inp.value = suggested > 0 ? suggested : "";
+    });
+  }
+
+  // Update all state from DOM
+  part.forEach(m => {
+    const inp = $("cs_" + m);
+    if (inp) S.customSplits[m] = inp.value;
+  });
+
+  // Show remaining indicator
+  const total = part.reduce((s, m) => s + parseFloat(S.customSplits[m] || 0), 0);
+  const diff = (S.splitMode === "percent" ? 100 : amt) - total;
+  const remEl = $("split-remaining");
+  if (remEl) {
+    remEl.textContent = Math.abs(diff) < 1 ? "✓ Cuadra perfecto" :
+      diff > 0 ? `Faltan ${S.splitMode === "percent" ? Math.round(diff)+"%" : clp(diff)}` :
+      `Excede ${S.splitMode === "percent" ? Math.round(Math.abs(diff))+"%" : clp(Math.abs(diff))}`;
+    remEl.style.color = Math.abs(diff) < 1 ? "var(--mint)" : "var(--red)";
+  }
+
+  refreshPreview();
+}
+
 function doUpdateCustomSplit(name, val) {
   // Save current value
   S.customSplits[name] = val;
@@ -734,8 +793,8 @@ function drawNewExpense() {
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
             ${av(m,g,28)}
             <div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${m}</div>
-            <input type="number" id="cs_${m}" placeholder="0" value="${S.customSplits[m]||""}"
-              oninput="doUpdateCustomSplit('${m.replace(/'/g,"\'")}',this.value)"
+            <input type="number" id="cs_${m}" data-member="${m}" placeholder="0" value="${S.customSplits[m]||""}"
+              oninput="recalcSplits(this)"
               style="width:88px;background:#fff;border:1.5px solid var(--border);border-radius:10px;
               padding:8px;font-size:14px;font-family:inherit;color:var(--text);outline:none;text-align:right;
               -webkit-user-select:text;user-select:text">
