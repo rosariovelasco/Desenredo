@@ -379,8 +379,13 @@ function doSaveExpense() {
 }
 
 function doSetSplitMode(mode){
+  // Preserve current input values before re-render
+  const descVal = $("id")?.value || "";
+  const amtVal  = $("ia")?.value || "";
+  const dateVal = $("idt")?.value || "";
   const customSplits={};
   const g=grp(); if(g) g.members.forEach(m=>customSplits[m]=mode==="portions"?"1":"");
+  S._expenseSnap = { desc: descVal, amt: amtVal, date: dateVal };
   go({splitMode:mode, customSplits});
 }
 
@@ -614,6 +619,12 @@ function restoreSnap() {
       $("badge").querySelector("span").textContent=S._snap.creator+" — ya estás dentro ✓";
       $("badge-av").innerHTML=av(S._snap.creator,null,26);
     }
+  }
+  if(S.screen==="newExpense"&&S._expenseSnap){
+    if($("id"))  $("id").value  = S._expenseSnap.desc;
+    if($("ia"))  $("ia").value  = S._expenseSnap.amt;
+    if($("idt")) $("idt").value = S._expenseSnap.date;
+    if(S._expenseSnap.amt) refreshPortions();
   }
 }
 
