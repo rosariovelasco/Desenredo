@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DESENREDO</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DESENREDO">
+<meta name="theme-color" content="#2D9E7A">
+<link rel="manifest" href="manifest.json">
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#E8EDE9;--card:#fff;--mint:#2D9E7A;--mint-l:#E0F2EC;--mint-m:#A8D5C4;
+  --text:#1E2D26;--mid:#4A6358;--light:#8AA89A;--red:#D95B4A;--red-l:#FDECEA;--border:#C8D8CB
+}
+body{background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text)}
+#app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;overflow-x:hidden}
+
+/* ── Layout ── */
+.screen{min-height:100vh;background:var(--bg);padding-bottom:100px}
+.hero{background:var(--mint);padding:44px 22px 32px;text-align:center}
+.topbar{display:flex;align-items:center;gap:10px;padding:18px 18px 10px;background:var(--bg);position:sticky;top:0;z-index:10}
+.content{padding:16px 18px 100px}
+.form-body{padding:8px 18px 100px}
+
+/* ── Typography ── */
+.hero-emoji{font-size:44px;margin-bottom:8px}
+.hero-title{font-size:26px;font-weight:900;color:#fff;margin-bottom:4px;letter-spacing:-.5px}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.8)}
+.topbar-title{font-size:17px;font-weight:900;color:var(--text);flex:1}
+.lbl{font-size:11px;color:var(--light);font-weight:800;margin-bottom:7px;letter-spacing:.8px;text-transform:uppercase}
+.lbl.mt{margin-top:20px}
+.section-lbl{font-size:10px;color:var(--light);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.section-lbl.mint{color:var(--mint)}
+
+/* ── Buttons ── */
+.btn-back{background:rgba(255,255,255,.2);border:none;border-radius:11px;width:36px;height:36px;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-back-light{background:#fff;border:none;border-radius:11px;width:36px;height:36px;color:var(--mint);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);flex-shrink:0}
+.btn-del-hdr{background:rgba(255,255,255,.15);border:none;border-radius:11px;width:36px;height:36px;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-del-top{background:var(--red-l);border:none;border-radius:11px;width:36px;height:36px;color:var(--red);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-float{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--mint);color:#fff;border:none;border-radius:28px;padding:14px 36px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(45,158,122,.5);font-family:inherit;white-space:nowrap;z-index:50}
+.btn-primary{width:100%;background:var(--mint);color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-primary.mt{margin-top:28px}
+.btn-danger{width:100%;background:var(--red-l);border:1.5px solid rgba(217,91,74,.25);border-radius:13px;padding:12px;color:var(--red);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-add-member{background:transparent;border:1.5px dashed var(--border);border-radius:13px;padding:10px;color:var(--light);font-size:13px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;margin-top:2px}
+.btn-rm{background:var(--red-l);border:none;border-radius:10px;width:36px;height:46px;color:var(--red);font-size:13px;cursor:pointer;flex-shrink:0}
+.btn-x{background:transparent;border:none;color:var(--light);font-size:15px;cursor:pointer;padding:4px;line-height:1;position:absolute;top:50%;right:12px;transform:translateY(-50%)}
+
+/* ── Inputs ── */
+input[type=text],input[type=number],input[type=date]{
+  width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:13px;
+  padding:12px 13px;color:var(--text);font-size:16px;font-family:inherit;outline:none;
+  -webkit-user-select:text;user-select:text;appearance:none;-webkit-appearance:none
+}
+input[type=number]{padding-left:28px}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=date]::-webkit-calendar-picker-indicator{opacity:.5}
+.inp-wrap{position:relative}
+.inp-prefix{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--light);font-weight:700;font-size:14px;pointer-events:none}
+.inp-row{display:flex;gap:8px;margin-bottom:9px;align-items:center}
+.inp-row input{flex:1}
+
+/* ── Cards ── */
+.card-wrap{position:relative;margin-bottom:10px}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.card.clickable{cursor:pointer}
+.group-icon{width:44px;height:44px;border-radius:13px;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:#fff;flex-shrink:0}
+.card-title{font-size:14px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-sub{font-size:11px;color:var(--light);margin-top:2px}
+
+/* ── Chips ── */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.chip{padding:7px 15px;border-radius:30px;border:2px solid var(--border);background:var(--card);color:var(--light);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:6px;transition:all .15s}
+.chip.on{border-color:var(--cc);background:var(--cc-bg);color:var(--cc)}
+
+/* ── Group header ── */
+.grp-hdr{background:var(--mint);padding:18px 18px 22px}
+.grp-hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.grp-hdr-title{font-size:17px;font-weight:900;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.members-row{display:flex;gap:14px;overflow-x:auto;padding-bottom:2px}
+.member-item{text-align:center;flex-shrink:0}
+.member-label{font-size:10px;color:rgba(255,255,255,.65);margin-top:4px;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.member-label.you{color:#fff;font-weight:800}
+
+/* ── Settlements ── */
+.settle-box{background:var(--card);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid var(--border)}
+.settle-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.settle-row:last-child{margin-bottom:0}
+
+/* ── Avatars ── */
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0}
+
+/* ── Preview ── */
+.preview{background:var(--mint-l);border-radius:14px;padding:14px;border:1px solid var(--mint-m);margin-top:18px;display:none}
+.preview-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.preview-row:last-child{margin-bottom:0}
+
+/* ── Detail ── */
+.detail-hero{text-align:center;padding:18px 0 24px}
+.det-card{background:var(--card);border-radius:14px;padding:13px;border:1px solid var(--border);margin-bottom:10px}
+.det-card.last{margin-bottom:22px}
+.bal-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.bal-row:last-child{margin-bottom:0}
+
+/* ── Creator badge ── */
+.badge{display:flex;align-items:center;gap:10px;background:var(--mint-l);border-radius:11px;padding:9px 12px;margin-top:8px;display:none}
+.badge span{font-size:12px;color:var(--mint);font-weight:700}
+
+/* ── Overlay ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;border-radius:24px 24px 0 0;padding:28px 24px 44px;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,.12)}
+.sheet-icon{font-size:34px;text-align:center;margin-bottom:10px}
+.sheet-title{font-size:16px;font-weight:800;color:var(--text);text-align:center;margin-bottom:8px}
+.sheet-sub{font-size:13px;color:var(--mid);text-align:center;margin-bottom:24px;line-height:1.6}
+.btn-yes{width:100%;background:var(--red);border:none;border-radius:14px;padding:13px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:8px}
+.btn-no{width:100%;background:transparent;border:none;color:var(--light);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:8px}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:48px 0;color:var(--light)}
+
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────
+const COLORS = ["#2D9E7A","#E07A5F","#3D7EBF","#F2A65A","#7B6FAB","#4ECDC4","#E07A9E","#6BA368"];
+
+let S = {
+  screen: "home",
+  groups: [],
+  gid: null,
+  eid: null,
+  memberCount: 1,
+  paidBy: "",
+  splits: {},
+  splitMode: "equal",
+  customSplits: {},
+  confirm: null,
+  payments: {}
+};
+
+function go(patch) {
+  Object.assign(S, patch);
+  saveData();
+  draw();
+}
+
+function saveData() {
+  try {
+    const groupsClean = S.groups.map(g => ({
+      ...g,
+      expenses: g.expenses.map(e => {
+        const {photo, ...rest} = e;
+        return rest;
+      })
+    }));
+    localStorage.setItem("desenredo", JSON.stringify({
+      groups: groupsClean,
+      payments: S.payments
+    }));
+    S.groups.forEach(g => g.expenses.forEach(e => {
+      if (e.photo) {
+        try { localStorage.setItem("photo_"+e.id, e.photo); } catch(err) {}
+      }
+    }));
+  } catch(e) { console.warn("Save error", e); }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem("desenredo");
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.groups)   S.groups   = data.groups;
+    if (data.payments) S.payments = data.payments;
+    S.groups.forEach(g => g.expenses.forEach(e => {
+      const p = localStorage.getItem("photo_"+e.id);
+      if (p) e.photo = p;
+    }));
+  } catch(e) {}
+}
+
+function deletePhotoFromStorage(eid) {
+  try { localStorage.removeItem("photo_"+eid); } catch(e) {}
+}
+
+// ── Helpers ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const clp = n => new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",maximumFractionDigits:0}).format(Math.round(n));
+const mColor = (name, grp) => { const i = grp ? grp.members.indexOf(name) : 0; return COLORS[(i<0?0:i)%COLORS.length]; };
+
+function grp()  { return S.groups.find(g=>g.id===S.gid); }
+function xp()   { const g=grp(); return g?.expenses?.find(e=>e.id===S.eid); }
+
+function balances(group) {
+  const t={}; group.members.forEach(m=>t[m]=0);
+  group.expenses.forEach(e=>group.members.forEach(m=>{t[m]=(t[m]||0)+(e.balances[m]||0);}));
+  return t;
+}
+
+function settlements(group) {
+  const b=balances(group);
+  const D=group.members.filter(m=>b[m]<-1).map(m=>({name:m,a:b[m]}));
+  const C=group.members.filter(m=>b[m]>1).map(m=>({name:m,a:b[m]}));
+  const T=[]; let i=0,j=0;
+  while(i<D.length&&j<C.length){
+    const p=Math.min(-D[i].a,C[j].a);
+    T.push({from:D[i].name,to:C[j].name,amount:p});
+    D[i].a+=p; C[j].a-=p;
+    if(Math.abs(D[i].a)<1)i++; if(Math.abs(C[j].a)<1)j++;
+  }
+  return T;
+}
+
+function av(name, grp, sz=36) {
+  const c=mColor(name,grp);
+  return `<div class="av" style="width:${sz}px;height:${sz}px;background:${c};font-size:${Math.round(sz*.38)}px">${(name||"?")[0].toUpperCase()}</div>`;
+}
+
+// ── Actions ──────────────────────────────────────────────
+function doAddGroup() {
+  const name = ($("gn")?.value||"").trim();
+  const creator = ($("gc")?.value||"").trim();
+  if(!name||!creator){alert("Completa el nombre del grupo y tu nombre");return;}
+  const extras=[];
+  for(let i=0;i<S.memberCount;i++){
+    const v=($(`gm${i}`)?.value||"").trim();
+    if(v&&v.toLowerCase()!==creator.toLowerCase()) extras.push(v);
+  }
+  const members=[creator,...extras];
+  const g={id:Date.now(),name,members,expenses:[]};
+  go({groups:[...S.groups,g],screen:"group",gid:g.id,memberCount:1});
+}
+
+function doAddMember() {
+  const snap={name:$("gn")?.value||"",creator:$("gc")?.value||"",members:[]};
+  for(let i=0;i<S.memberCount;i++) snap.members.push($(`gm${i}`)?.value||"");
+  S._snap=snap;
+  go({memberCount:S.memberCount+1});
+}
+
+function doRemoveMember(idx) {
+  const snap={name:$("gn")?.value||"",creator:$("gc")?.value||"",members:[]};
+  for(let i=0;i<S.memberCount;i++) if(i!==idx) snap.members.push($(`gm${i}`)?.value||"");
+  S._snap=snap;
+  go({memberCount:Math.max(1,S.memberCount-1)});
+}
+
+function doDeleteGroup(id) {
+  go({groups:S.groups.filter(g=>g.id!==id),screen:"home",gid:null,confirm:null});
+}
+
+function doStartExpense() {
+  const g=grp(); if(!g)return;
+  const splits={}; g.members.forEach(m=>splits[m]=true);
+  const customSplits={}; g.members.forEach(m=>customSplits[m]="");
+  go({screen:"newExpense",paidBy:g.members[0],splits,splitMode:"equal",customSplits});
+}
+
+function doTogglePaidBy(name) {
+  S.paidBy=name;
+  document.querySelectorAll(".chip-paid").forEach(btn=>{
+    const active=btn.dataset.name===name;
+    btn.classList.toggle("on",active);
+    if(active){btn.style.setProperty("--cc",btn.dataset.c);btn.style.setProperty("--cc-bg",btn.dataset.cbg);}
+  });
+  refreshPreview();
+}
+
+function doToggleSplit(name) {
+  S.splits[name]=!S.splits[name];
+  const btn=document.querySelector(`.chip-split[data-name="${name}"]`);
+  if(btn){
+    btn.classList.toggle("on",S.splits[name]);
+    if(S.splits[name]){btn.style.setProperty("--cc",btn.dataset.c);btn.style.setProperty("--cc-bg",btn.dataset.cbg);}
+  }
+  refreshPreview();
+}
+
+function getIndiv() {
+  const g=grp(); if(!g) return {};
+  const amt=parseFloat($("ia")?.value||0);
+  const part=g.members.filter(m=>S.splits[m]);
+  const indiv={};
+  if(!amt||!part.length) return indiv;
+  if(S.splitMode==="equal"){
+    const pp=amt/part.length;
+    part.forEach(m=>indiv[m]=pp);
+  } else if(S.splitMode==="fixed"){
+    part.forEach(m=>indiv[m]=parseFloat(S.customSplits[m]||0));
+  } else if(S.splitMode==="portions"){
+    const tot=totalPortions();
+    const unitVal=amt/tot;
+    part.forEach(m=>indiv[m]=unitVal*parseFloat(S.customSplits[m]||1));
+  } else {
+    part.forEach(m=>indiv[m]=amt*(parseFloat(S.customSplits[m]||0)/100));
+  }
+  return indiv;
+}
+
+function refreshPreview() {
+  const amt=parseFloat($("ia")?.value||0);
+  const g=grp(); if(!g)return;
+  const box=$("preview"); if(!box)return;
+  const part=g.members.filter(m=>S.splits[m]);
+  if(!part.length||!amt){box.style.display="none";return;}
+  const indiv=getIndiv();
+  box.style.display="block";
+  box.innerHTML=`<div class="section-lbl mint" style="margin-bottom:10px">Así queda dividido</div>`+
+    part.map(m=>`<div class="preview-row">
+      ${av(m,g,28)}
+      <div style="flex:1;font-size:13px;color:var(--mid)">${m}</div>
+      <div style="font-weight:800;font-size:13px;color:${m===S.paidBy?"var(--mint)":"var(--red)"}">
+        ${m===S.paidBy?`recibe ${clp(amt-(indiv[m]||0))}`:`debe ${clp(indiv[m]||0)}`}
+      </div>
+    </div>`).join("");
+}
+
+function doSaveExpense() {
+  const g=grp(); if(!g)return;
+  const desc=($("id")?.value||"").trim();
+  const amt=parseFloat($("ia")?.value||0);
+  const date=$("idt")?.value;
+  if(!desc||!amt||!date){alert("Completa todos los campos");return;}
+  const part=g.members.filter(m=>S.splits[m]);
+  if(!part.length){alert("Selecciona al menos una persona");return;}
+
+  const bal={}; g.members.forEach(m=>bal[m]=0);
+  bal[S.paidBy]+=amt;
+  let perPerson=0;
+  const indiv={};
+
+  if(S.splitMode==="equal"){
+    perPerson=amt/part.length;
+    part.forEach(m=>{indiv[m]=perPerson; bal[m]-=perPerson;});
+  } else if(S.splitMode==="fixed"){
+    let total=0;
+    part.forEach(m=>{
+      const v=parseFloat(($("cs_"+m)?.value||S.customSplits[m])||0);
+      indiv[m]=v; total+=v;
+    });
+    if(Math.abs(total-amt)>1){alert("Los montos no suman "+clp(amt)+". Suma actual: "+clp(total));return;}
+    part.forEach(m=>bal[m]-=indiv[m]);
+    perPerson=amt/part.length;
+  } else if(S.splitMode==="portions"){
+    const tot=totalPortions();
+    const unitVal=amt/tot;
+    part.forEach(m=>{
+      const portions=parseFloat(($("cs_"+m)?.value||S.customSplits[m])||1);
+      indiv[m]=unitVal*portions;
+      bal[m]-=indiv[m];
+    });
+    perPerson=unitVal;
+  } else if(S.splitMode==="percent"){
+    let total=0;
+    part.forEach(m=>{
+      const v=parseFloat(($("cs_"+m)?.value||S.customSplits[m])||0);
+      indiv[m]=v; total+=v;
+    });
+    if(Math.abs(total-100)>0.5){alert("Los porcentajes no suman 100%. Suma actual: "+total+"%");return;}
+    part.forEach(m=>{const a=amt*indiv[m]/100; indiv[m]=a; bal[m]-=a;});
+    perPerson=amt/part.length;
+  }
+
+  const photo = S._pendingPhoto || null;
+  const e={id:Date.now(),amount:amt,date,description:desc,
+    paidBy:S.paidBy,splits:{...S.splits},splitMode:S.splitMode,
+    indiv,perPerson,balances:bal,participating:part,photo};
+  const groups=S.groups.map(g2=>g2.id===S.gid?{...g2,expenses:[...g2.expenses,e]}:g2);
+  go({groups,screen:"group",_pendingPhoto:null});
+}
+
+function doSetSplitMode(mode){
+  const customSplits={};
+  const g=grp(); if(g) g.members.forEach(m=>customSplits[m]=mode==="portions"?"1":"");
+  go({splitMode:mode, customSplits});
+}
+
+function totalPortions() {
+  const g=grp(); if(!g) return 1;
+  const total = g.members.filter(m=>S.splits[m]).reduce((s,m)=>s+parseFloat(S.customSplits[m]||1),0);
+  return total || 1;
+}
+
+function updatePortionsTotal() {
+  const el = $("portions-total"); if(!el) return;
+  const amt = parseFloat($("ia")?.value||0);
+  const tot = totalPortions();
+  el.textContent = `Total: ${tot} porciones${amt ? " · "+clp(amt/tot)+" c/u" : ""}`;
+}
+
+function onPortionChange(inp) {
+  S.customSplits[inp.dataset.member] = inp.value;
+  refreshPortions();
+  refreshPreview();
+}
+
+function refreshPortions() {
+  if(S.splitMode !== "portions") return;
+  const g=grp(); if(!g) return;
+  const amt=parseFloat($("ia")?.value||0);
+  const tot=totalPortions();
+  const unit=tot?amt/tot:0;
+  g.members.filter(m=>S.splits[m]).forEach(m=>{
+    const mid=m.replace(/[^a-zA-Z0-9]/g,"_");
+    const el=document.getElementById("monto_"+mid);
+    const p=parseFloat(S.customSplits[m]||1);
+    if(el) el.textContent=amt&&unit?clp(unit*p):"—";
+  });
+  const ptEl=$("portions-total");
+  if(ptEl) ptEl.textContent="Total: "+tot+" porciones"+(amt&&unit?" · "+clp(unit)+" c/u":"");
+}
+
+function recalcSplits(changedInput) {
+  const g = grp(); if (!g) return;
+  const amt = parseFloat($("ia")?.value || 0);
+  if (!amt) return;
+
+  const part = g.members.filter(m => S.splits[m]);
+  const name = changedInput.dataset.member;
+
+  if (!S._lockedSplits) S._lockedSplits = {};
+  S._lockedSplits[name] = true;
+  S.customSplits[name] = changedInput.value;
+
+  const maxVal = S.splitMode === "percent" ? 100 : amt;
+  let lockedTotal = 0;
+  part.forEach(m => {
+    if (S._lockedSplits[m]) lockedTotal += parseFloat(S.customSplits[m] || 0);
+  });
+
+  const unlocked = part.filter(m => !S._lockedSplits[m]);
+  if (unlocked.length > 0) {
+    const remaining = Math.max(0, maxVal - lockedTotal);
+    const suggested = Math.round(remaining / unlocked.length);
+    unlocked.forEach(m => {
+      S.customSplits[m] = String(suggested);
+      const inp = $("cs_" + m);
+      if (inp) inp.value = suggested > 0 ? suggested : "";
+    });
+  }
+
+  const total = part.reduce((s, m) => s + parseFloat(S.customSplits[m] || 0), 0);
+  const diff = maxVal - total;
+  const remEl = $("split-remaining");
+  if (remEl) {
+    remEl.textContent = Math.abs(diff) < 1 ? "✓ Cuadra" :
+      diff > 0 ? `Faltan ${S.splitMode === "percent" ? Math.round(diff)+"%" : clp(diff)}` :
+      `Excede ${S.splitMode === "percent" ? Math.round(Math.abs(diff))+"%" : clp(Math.abs(diff))}`;
+    remEl.style.color = Math.abs(diff) < 1 ? "var(--mint)" : "var(--red)";
+  }
+
+  refreshPreview();
+}
+
+function doUpdateCustomSplit(name, val) {
+  S.customSplits[name] = val;
+
+  const g = grp(); if (!g) return;
+  const amt = parseFloat($("ia")?.value || 0);
+  if (!amt) { refreshPreview(); return; }
+
+  const part = g.members.filter(m => S.splits[m]);
+  const activeEl = document.activeElement;
+
+  let filledTotal = 0;
+  let emptyMembers = [];
+  part.forEach(m => {
+    const inp = $("cs_" + m);
+    const isFocused = inp && inp === activeEl;
+    if (isFocused) {
+      filledTotal += parseFloat(val || 0);
+    } else {
+      const v = parseFloat(S.customSplits[m] || 0);
+      if (v > 0) filledTotal += v;
+      else emptyMembers.push(m);
+    }
+  });
+
+  if (emptyMembers.length > 0) {
+    const remaining = Math.max(0, (S.splitMode === "percent" ? 100 : amt) - filledTotal);
+    const suggested = Math.round(remaining / emptyMembers.length);
+    emptyMembers.forEach(m => {
+      S.customSplits[m] = suggested > 0 ? String(suggested) : "";
+      const inp = $("cs_" + m);
+      if (inp) inp.value = suggested > 0 ? suggested : "";
+    });
+  }
+
+  const remEl = $("split-remaining");
+  if (remEl) {
+    let total = 0;
+    part.forEach(m => total += parseFloat(S.customSplits[m] || 0));
+    const diff = S.splitMode === "percent" ? 100 - total : amt - total;
+    remEl.textContent = Math.abs(diff) < 1 ? "✓ Cuadra perfecto" :
+      diff > 0 ? `Faltan ${S.splitMode === "percent" ? diff+"%" : clp(diff)}` :
+      `Excede en ${S.splitMode === "percent" ? Math.abs(diff)+"%" : clp(Math.abs(diff))}`;
+    remEl.style.color = Math.abs(diff) < 1 ? "var(--mint)" : "var(--red)";
+  }
+
+  refreshPreview();
+}
+
+function doPhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    S._pendingPhoto = e.target.result;
+    const preview = $("photo-preview");
+    if (preview) {
+      preview.style.display = "block";
+      preview.innerHTML = `<div style="position:relative;display:inline-block">
+        <img src="${e.target.result}" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px">
+        <button onclick="S._pendingPhoto=null;$('photo-preview').style.display='none'" 
+          style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:26px;height:26px;color:#fff;font-size:14px;cursor:pointer">✕</button>
+      </div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function doDeleteExpense(eid) {
+  deletePhotoFromStorage(eid);
+  const groups=S.groups.map(g=>g.id===S.gid?{...g,expenses:g.expenses.filter(e=>e.id!==eid)}:g);
+  go({groups,screen:"group",eid:null,confirm:null});
+}
+
+function doConfirmYes() {
+  if(!S.confirm)return;
+  if(S.confirm.type==="group") doDeleteGroup(S.confirm.id);
+  else doDeleteExpense(S.confirm.id);
+}
+
+function doTogglePayment(gid, from, to) {
+  const key = gid + "_" + from + "_" + to;
+  S.payments[key] = !S.payments[key];
+  saveData();
+  const box = document.getElementById("settle-box");
+  if (box) box.innerHTML = buildSettleRows(grp());
+}
+
+function buildSettleRows(g) {
+  if (!g) return "";
+  const S2 = settlements(g);
+  return S2.map(t => {
+    const key = S.gid + "_" + t.from + "_" + t.to;
+    const paid = !!S.payments[key];
+    const fromE = t.from.replace(/'/g, "\\'");
+    const toE   = t.to.replace(/'/g, "\\'");
+    return `<div class="settle-row">
+      ${av(t.from, g, 28)}
+      <div style="flex:1;font-size:12px;color:var(--mid);${paid ? "text-decoration:line-through;opacity:.5" : ""}">
+        <b style="color:var(--text)">${t.from}</b> → <b style="color:var(--text)">${t.to}</b>
+      </div>
+      <div style="font-weight:800;color:${paid ? "var(--mint)" : "var(--red)"};font-size:13px;margin-right:6px">
+        ${paid ? "✓" : clp(t.amount)}
+      </div>
+      <button onclick="doTogglePayment(${S.gid},'${fromE}','${toE}')"
+        style="background:${paid ? "var(--mint-l)" : "var(--red-l)"};border:none;border-radius:20px;
+        padding:4px 10px;font-size:11px;font-weight:800;
+        color:${paid ? "var(--mint)" : "var(--red)"};cursor:pointer;font-family:inherit;white-space:nowrap">
+        ${paid ? "Pagado ✓" : "Pagar"}
+      </button>
+    </div>`;
+  }).join("");
+}
+
+function doAddMemberToGroup() {
+  const name = (document.getElementById("new-member-inp")?.value || "").trim();
+  if (!name) return;
+  const g = grp();
+  if (!g) return;
+  if (g.members.map(m => m.toLowerCase()).includes(name.toLowerCase())) {
+    alert("Esa persona ya está en el grupo");
+    return;
+  }
+  const groups = S.groups.map(g2 => g2.id === S.gid
+    ? { ...g2, members: [...g2.members, name] } : g2);
+  go({ groups, screen: "group" });
+}
+
+// ── Draw ─────────────────────────────────────────────────
+function draw() {
+  const screens={home:drawHome,newGroup:drawNewGroup,group:drawGroup,newExpense:drawNewExpense,expenseDetail:drawDetail,addMember:drawAddMember};
+  $("app").innerHTML=(screens[S.screen]||drawHome)();
+  restoreSnap();
+  attachSplitListeners();
+}
+
+function attachSplitListeners() {
+  document.querySelectorAll("[data-split='true']").forEach(function(inp) {
+    inp.removeEventListener("input", inp._splitHandler);
+    inp._splitHandler = function() { recalcSplits(this); };
+    inp.addEventListener("input", inp._splitHandler);
+  });
+}
+
+function restoreSnap() {
+  if(S.screen==="newGroup"&&S._snap){
+    if($("gn"))  $("gn").value=S._snap.name;
+    if($("gc"))  $("gc").value=S._snap.creator;
+    S._snap.members.forEach((v,i)=>{ if($(`gm${i}`)) $(`gm${i}`).value=v; });
+    if(S._snap.creator.trim()&&$("badge")){
+      $("badge").style.display="flex";
+      $("badge").querySelector("span").textContent=S._snap.creator+" — ya estás dentro ✓";
+      $("badge-av").innerHTML=av(S._snap.creator,null,26);
+    }
+  }
+}
+
+function overlayHTML() {
+  if(!S.confirm)return"";
+  const {type,label}=S.confirm;
+  return `<div class="overlay" onclick="if(event.target===this)go({confirm:null})">
+    <div class="sheet">
+      <div class="sheet-icon">🗑️</div>
+      <div class="sheet-title">${type==="group"?"¿Eliminar grupo?":"¿Eliminar gasto?"}</div>
+      <div class="sheet-sub"><b>"${label}"</b> se borrará para siempre.</div>
+      <button class="btn-yes" onclick="doConfirmYes()">Sí, eliminar</button>
+      <button class="btn-no" onclick="go({confirm:null})">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+// ── HOME ─────────────────────────────────────────────────
+function drawHome() {
+  return `<div class="screen">
+    ${overlayHTML()}
+    <div class="hero">
+      <div class="hero-emoji">🪢</div>
+      <div class="hero-title">DESENREDO</div>
+      <div class="hero-sub">Divide sin dramas, paga sin cuentas</div>
+    </div>
+    <div class="content">
+      ${S.groups.length===0?`<div class="empty"><div style="font-size:38px;margin-bottom:12px">👥</div><div style="font-size:13px;line-height:1.8">Aún no tienes grupos.<br>¡Crea uno para partir!</div></div>`
+        :S.groups.map(g=>{
+          const total=g.expenses.reduce((a,e)=>a+e.amount,0);
+          const lbl=g.name.replace(/'/g,"\\'");
+          return `<div class="card-wrap">
+            <div class="card clickable" onclick="go({screen:'group',gid:${g.id}})">
+              <div class="group-icon">${g.name[0].toUpperCase()}</div>
+              <div style="flex:1;min-width:0">
+                <div class="card-title">${g.name}</div>
+                <div class="card-sub">${g.members.length} personas · ${g.expenses.length} gastos</div>
+              </div>
+              <div style="text-align:right;padding-right:28px">
+                <div style="font-size:10px;color:var(--light)">Total</div>
+                <div style="font-weight:800;color:var(--mint);font-size:14px">${clp(total)}</div>
+              </div>
+            </div>
+            <button class="btn-x" onclick="go({confirm:{type:'group',id:${g.id},label:'${lbl}'}})">✕</button>
+          </div>`;
+        }).join("")}
+    </div>
+    <button class="btn-float" onclick="go({screen:'newGroup',memberCount:1,_snap:null})">+ Nuevo grupo</button>
+  </div>`;
+}
+
+// ── NEW GROUP ────────────────────────────────────────────
+function drawNewGroup() {
+  const rows=Array.from({length:S.memberCount},(_,i)=>`
+    <div class="inp-row">
+      <input type="text" id="gm${i}" placeholder="Persona ${i+2}" autocomplete="off">
+      ${S.memberCount>1?`<button class="btn-rm" onclick="doRemoveMember(${i})">✕</button>`:""}
+    </div>`).join("");
+  return `<div class="screen">
+    <div class="topbar">
+      <button class="btn-back-light" onclick="go({screen:'home',_snap:null})">←</button>
+      <div class="topbar-title">Nuevo grupo</div>
+    </div>
+    <div class="form-body">
+      <div class="lbl">Nombre del grupo</div>
+      <input type="text" id="gn" placeholder="Ej: Viaje a Valpo, Depto 2024…" autocomplete="off">
+
+      <div class="lbl mt">Tu nombre</div>
+      <input type="text" id="gc" placeholder="¿Cómo te llamas?" autocomplete="off"
+        onblur="(function(){const v=this.value.trim();if(!v)return;const b=$('badge');b.style.display='flex';b.querySelector('span').textContent=v+' — ya estás dentro ✓';$('badge-av').innerHTML=av(v,null,26);}).call(this)">
+      <div class="badge" id="badge">
+        <div id="badge-av"></div>
+        <span></span>
+      </div>
+
+      <div class="lbl mt">Otros participantes</div>
+      ${rows}
+      <button class="btn-add-member" onclick="doAddMember()">+ Agregar persona</button>
+      <button class="btn-primary mt" onclick="doAddGroup()">Crear grupo</button>
+    </div>
+  </div>`;
+}
+
+// ── GROUP ────────────────────────────────────────────────
+function drawGroup() {
+  const g=grp(); if(!g)return drawHome();
+  const S2=settlements(g);
+  const expenses=[...g.expenses].reverse();
+  return `<div class="screen">
+    ${overlayHTML()}
+    <div class="grp-hdr">
+      <div class="grp-hdr-top">
+        <button class="btn-back" onclick="go({screen:'home'})">←</button>
+        <div class="grp-hdr-title">${g.name}</div>
+        <button class="btn-del-hdr" onclick="go({confirm:{type:'group',id:${g.id},label:'${g.name.replace(/'/g,"\\'")}'}})">🗑️</button>
+      </div>
+      <div class="members-row">
+        ${g.members.map((m,i)=>`<div class="member-item">
+          ${av(m,g,42)}
+          <div class="member-label${i===0?" you":""}">${m}${i===0?" ✓":""}</div>
+        </div>`).join("")}
+        <div class="member-item" style="cursor:pointer" onclick="go({screen:'addMember'})">
+          <div class="av" style="width:42px;height:42px;background:rgba(255,255,255,0.25);font-size:22px;border:2px dashed rgba(255,255,255,0.5)">+</div>
+          <div class="member-label">Agregar</div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      ${S2.length?`<div class="settle-box">
+        <div class="section-lbl mint">Quién le debe a quién</div>
+        <div id="settle-box">${buildSettleRows(g)}</div>
+      </div>`:""}
+      <div class="section-lbl">Gastos (${g.expenses.length})</div>
+      ${g.expenses.length===0?`<div class="empty" style="padding:40px 0"><div style="font-size:34px;margin-bottom:8px">🧾</div><div style="font-size:13px">Sin gastos todavía. ¡Agrega el primero!</div></div>`
+        :expenses.map(e=>{
+          const lbl=e.description.replace(/'/g,"\\'");
+          return `<div class="card-wrap">
+            <div class="card clickable" onclick="go({screen:'expenseDetail',eid:${e.id}})">
+              ${av(e.paidBy,g,36)}
+              <div style="flex:1;min-width:0">
+                <div class="card-title">${e.description}</div>
+                <div class="card-sub">${e.date} · Pagó <b style="color:${mColor(e.paidBy,g)}">${e.paidBy}</b></div>
+              </div>
+              <div style="text-align:right;padding-right:26px">
+                <div style="font-weight:800;color:var(--text);font-size:15px">${clp(e.amount)}</div>
+                <div style="font-size:10px;color:var(--light)">${clp(e.perPerson)} c/u</div>
+              </div>
+            </div>
+            <button class="btn-x" onclick="event.stopPropagation();go({confirm:{type:'expense',id:${e.id},label:'${lbl}'}})">✕</button>
+          </div>`;
+        }).join("")}
+    </div>
+    <button class="btn-float" onclick="doStartExpense()">+ Gasto</button>
+  </div>`;
+}
+
+// ── NEW EXPENSE ──────────────────────────────────────────
+function drawNewExpense() {
+  const g=grp(); if(!g)return drawGroup();
+  const today=new Date().toISOString().split("T")[0];
+  return `<div class="screen">
+    <div class="topbar">
+      <button class="btn-back-light" onclick="go({screen:'group'})">←</button>
+      <div class="topbar-title">Agregar gasto</div>
+    </div>
+    <div class="form-body">
+      <div class="lbl">Descripción</div>
+      <input type="text" id="id" placeholder="Ej: Almuerzo, Uber, Supermercado…" autocomplete="off">
+
+      <div class="lbl mt">Monto (CLP)</div>
+      <div class="inp-wrap">
+        <span class="inp-prefix">$</span>
+        <input type="number" id="ia" placeholder="0" oninput="refreshPreview();refreshPortions()">
+      </div>
+
+      <div class="lbl mt">Fecha</div>
+      <input type="date" id="idt" value="${today}">
+
+      <div class="lbl mt">¿Quién pagó?</div>
+      <div class="chips">
+        ${g.members.map(m=>{
+          const c=mColor(m,g), cbg=c+"18", on=S.paidBy===m;
+          return `<button class="chip chip-paid${on?" on":""}" data-name="${m}" data-c="${c}" data-cbg="${cbg}"
+            ${on?`style="--cc:${c};--cc-bg:${cbg}"`:""}
+            onclick="doTogglePaidBy('${m.replace(/'/g,"\\'")}')">
+            ${m}
+          </button>`;
+        }).join("")}
+      </div>
+
+      <div class="lbl mt">¿Entre quiénes se divide?</div>
+      <div class="chips">
+        ${g.members.map(m=>{
+          const c=mColor(m,g), cbg=c+"18", on=!!S.splits[m];
+          return `<button class="chip chip-split${on?" on":""}" data-name="${m}" data-c="${c}" data-cbg="${cbg}"
+            ${on?`style="--cc:${c};--cc-bg:${cbg}"`:""}
+            onclick="doToggleSplit('${m.replace(/'/g,"\\'")}')">
+            ${m}
+          </button>`;
+        }).join("")}
+      </div>
+
+      <div class="lbl mt">Tipo de división</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${[["equal","Equitativo"],["portions","Por porciones"],["fixed","Monto fijo"],["percent","Porcentaje"]].map(([mode,lbl])=>{
+          const on=S.splitMode===mode;
+          return `<button onclick="doSetSplitMode('${mode}')"
+            style="flex:1;min-width:calc(50% - 4px);padding:9px 4px;border-radius:12px;border:2px solid ${on?"var(--mint)":"var(--border)"};
+            background:${on?"var(--mint-l)":"#fff"};color:${on?"var(--mint)":"var(--light)"};
+            font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">${lbl}</button>`;
+        }).join("")}
+      </div>
+
+      ${S.splitMode==="portions"?`<div style="background:var(--mint-l);border-radius:13px;padding:12px;border:1px solid var(--mint-m);margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div class="section-lbl mint" style="margin-bottom:0">Porciones por persona</div>
+          <div style="font-size:11px;color:var(--mint);font-weight:800" id="portions-total">Total: ${totalPortions()} porciones</div>
+        </div>
+        ${g.members.filter(m=>S.splits[m]).map(m=>{
+          const portions=parseFloat(S.customSplits[m]||1);
+          const amt=parseFloat(($("ia")?.value)||0);
+          const tot=totalPortions();
+          const unitVal=amt&&tot?amt/tot:0;
+          const monto=unitVal?clp(unitVal*portions):"—";
+          const mid=m.replace(/[^a-zA-Z0-9]/g,"_");
+          return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            ${av(m,g,28)}
+            <div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${m}</div>
+            <div id="monto_${mid}" style="font-size:12px;color:var(--mid);font-weight:800;margin-right:4px">${monto}</div>
+            <input type="number" id="cs_${m}" data-member="${m}"
+              placeholder="1" value="${portions}" min="0" step="1" autocomplete="off"
+              oninput="onPortionChange(this)"
+              style="width:60px;background:#fff;border:1.5px solid var(--border);border-radius:10px;
+              padding:8px;font-size:14px;font-family:inherit;color:var(--text);outline:none;text-align:center;
+              -webkit-user-select:text;user-select:text">
+          </div>`;
+        }).join("")}
+      </div>`:""}
+
+      ${S.splitMode!=="equal"&&S.splitMode!=="portions"?`<div style="background:var(--mint-l);border-radius:13px;padding:12px;border:1px solid var(--mint-m);margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="section-lbl mint" style="margin-bottom:0">${S.splitMode==="fixed"?"Monto por persona":"% por persona"}</div>
+          <div id="split-remaining" style="font-size:11px;font-weight:800;color:var(--light)">Ingresa los montos</div>
+        </div>
+        ${g.members.filter(m=>S.splits[m]).map(m=>`
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            ${av(m,g,28)}
+            <div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${m}</div>
+            <input type="number" id="cs_${m}" data-split="true" data-member="${m}" placeholder="0" value="${S.customSplits[m]||""}" autocomplete="off"
+              style="width:88px;background:#fff;border:1.5px solid var(--border);border-radius:10px;
+              padding:8px;font-size:14px;font-family:inherit;color:var(--text);outline:none;text-align:right;
+              -webkit-user-select:text;user-select:text">
+          </div>`).join("")}
+      </div>`:""}
+
+      <div class="preview" id="preview"></div>
+
+      <div class="lbl mt">Foto de boleta (opcional)</div>
+      <label style="display:flex;align-items:center;gap:10px;background:#fff;border:1.5px dashed var(--border);border-radius:13px;padding:12px 14px;cursor:pointer">
+        <span style="font-size:22px">📷</span>
+        <span style="font-size:14px;color:var(--light);font-weight:700">Adjuntar foto de boleta</span>
+        <input type="file" accept="image/*" style="display:none" onchange="doPhotoUpload(this)">
+      </label>
+      <div id="photo-preview" style="display:none;margin-top:10px"></div>
+
+      <button class="btn-primary" style="margin-top:26px" onclick="doSaveExpense()">Guardar gasto</button>
+    </div>
+  </div>`;
+}
+
+// ── EXPENSE DETAIL ───────────────────────────────────────
+function drawDetail() {
+  const g=grp(), e=xp();
+  if(!g||!e)return drawGroup();
+  return `<div class="screen">
+    ${overlayHTML()}
+    <div class="topbar">
+      <button class="btn-back-light" onclick="go({screen:'group',eid:null})">←</button>
+      <div class="topbar-title">Detalle</div>
+    </div>
+    <div class="form-body">
+      <div class="detail-hero">
+        <div style="font-size:40px;margin-bottom:8px">🧾</div>
+        <div style="font-size:28px;font-weight:900;color:var(--text);margin-bottom:4px">${clp(e.amount)}</div>
+        <div style="font-size:16px;color:var(--mid);margin-bottom:3px">${e.description}</div>
+        <div style="font-size:12px;color:var(--light)">${e.date}</div>
+      </div>
+      ${e.photo ? `<div style="margin-bottom:12px">
+        <img src="${e.photo}" style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;border:1px solid var(--border)" 
+          onclick="this.style.maxHeight=this.style.maxHeight==='none'?'220px':'none'">
+        <div style="font-size:11px;color:var(--light);text-align:center;margin-top:4px">Toca la imagen para ampliar</div>
+      </div>` : ""}
+      <div class="det-card">
+        <div class="section-lbl mint" style="margin-bottom:8px">Pagó</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${av(e.paidBy,g,34)}
+          <div style="font-size:14px;color:var(--text);font-weight:700;flex:1">${e.paidBy}</div>
+          <div style="font-weight:800;color:var(--mint);font-size:15px">${clp(e.amount)}</div>
+        </div>
+      </div>
+      <div class="det-card last">
+        <div class="section-lbl mint" style="margin-bottom:10px">
+          ${e.splitMode==="fixed"?"Monto fijo":e.splitMode==="percent"?"Por porcentaje":e.splitMode==="portions"?"Por porciones":"División equitativa · "+clp(e.perPerson)+" c/u"}
+        </div>
+        ${g.members.map(m=>{
+          const b=e.balances[m];
+          if(b===undefined)return"";
+          const c=b>0?"var(--mint)":b<0?"var(--red)":"var(--light)";
+          const lbl=b>0?`+${clp(b)}`:b<0?clp(b):"sin cambio";
+          const indivAmt=e.indiv&&e.indiv[m]?` (${clp(e.indiv[m])})`:e.splitMode==="equal"?` (${clp(e.perPerson)})`:"";
+          return `<div class="bal-row">
+            ${av(m,g,30)}
+            <div style="flex:1;font-size:13px;color:var(--mid)">${m}<span style="color:var(--light);font-size:11px">${indivAmt}</span></div>
+            <div style="font-weight:800;font-size:13px;color:${c}">${lbl}</div>
+          </div>`;
+        }).join("")}
+      </div>
+      <button class="btn-danger" onclick="go({confirm:{type:'expense',id:${e.id},label:'${e.description.replace(/'/g,"\\'")}'}})">🗑️ Eliminar gasto</button>
+    </div>
+  </div>`;
+}
+
+function drawAddMember() {
+  const g = grp(); if (!g) return drawGroup();
+  return `<div class="screen">
+    <div class="topbar">
+      <button class="btn-back-light" onclick="go({screen:'group'})">←</button>
+      <div class="topbar-title">Agregar persona</div>
+    </div>
+    <div class="form-body">
+      <div style="text-align:center;padding:24px 0 28px">
+        <div style="font-size:40px;margin-bottom:8px">👤</div>
+        <div style="font-size:15px;color:var(--mid);line-height:1.5">¿Quién se suma a<br><b style="color:var(--text)">${g.name}</b>?</div>
+      </div>
+      <div class="lbl">Nombre</div>
+      <input type="text" id="new-member-inp" placeholder="Nombre de la persona…" autocomplete="off">
+      <div style="margin-top:10px;background:var(--mint-l);border-radius:12px;padding:10px 14px">
+        <div class="section-lbl mint" style="margin-bottom:8px">Ya están en el grupo</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${g.members.map(m => `<div style="display:flex;align-items:center;gap:6px;background:#fff;border-radius:20px;padding:4px 10px;border:1px solid var(--border)">
+            ${av(m, g, 22)}<span style="font-size:12px;font-weight:700;color:var(--text)">${m}</span>
+          </div>`).join("")}
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:24px" onclick="doAddMemberToGroup()">Agregar al grupo</button>
+    </div>
+  </div>`;
+}
+
+document.addEventListener("input", function(e) {
+  if (e.target && e.target.dataset && e.target.dataset.split === "true") {
+    recalcSplits(e.target);
+  }
+});
+
+// ── Boot ─────────────────────────────────────────────────
+loadData();
+draw();
+</script>
+</body>
+</html>
