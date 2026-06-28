@@ -136,21 +136,17 @@ const COLORS = ["#2D9E7A","#E07A5F","#3D7EBF","#F2A65A","#7B6FAB","#4ECDC4","#E0
 let S = {
   screen: "home",
   groups: [],
-  gid: null,        // current group id
-  eid: null,        // current expense id
+  gid: null,
+  eid: null,
   memberCount: 1,
   paidBy: "",
   splits: {},
   splitMode: "equal",
   customSplits: {},
-  splitMode: "equal",  // equal | fixed | percent
-  customSplits: {},  // name -> amount or percent
-  confirm: null,     // {type, id, label}
-  payments: {}       // key: gid_from_to -> bool
+  confirm: null,
+  payments: {}
 };
 
-// Never re-render while user is typing — all text inputs are uncontrolled
-// Re-render only on explicit navigation / data changes
 function go(patch) {
   Object.assign(S, patch);
   saveData();
@@ -159,7 +155,6 @@ function go(patch) {
 
 function saveData() {
   try {
-    // Strip photos from groups before saving (saved separately)
     const groupsClean = S.groups.map(g => ({
       ...g,
       expenses: g.expenses.map(e => {
@@ -171,7 +166,6 @@ function saveData() {
       groups: groupsClean,
       payments: S.payments
     }));
-    // Save photos separately by expense id
     S.groups.forEach(g => g.expenses.forEach(e => {
       if (e.photo) {
         try { localStorage.setItem("photo_"+e.id, e.photo); } catch(err) {}
@@ -187,7 +181,6 @@ function loadData() {
     const data = JSON.parse(raw);
     if (data.groups)   S.groups   = data.groups;
     if (data.payments) S.payments = data.payments;
-    // Restore photos
     S.groups.forEach(g => g.expenses.forEach(e => {
       const p = localStorage.getItem("photo_"+e.id);
       if (p) e.photo = p;
@@ -248,7 +241,6 @@ function doAddGroup() {
 }
 
 function doAddMember() {
-  // Snapshot current values before re-render
   const snap={name:$("gn")?.value||"",creator:$("gc")?.value||"",members:[]};
   for(let i=0;i<S.memberCount;i++) snap.members.push($(`gm${i}`)?.value||"");
   S._snap=snap;
@@ -274,7 +266,6 @@ function doStartExpense() {
 }
 
 function doTogglePaidBy(name) {
-  // No full re-render — just update chips visually
   S.paidBy=name;
   document.querySelectorAll(".chip-paid").forEach(btn=>{
     const active=btn.dataset.name===name;
@@ -305,6 +296,10 @@ function getIndiv() {
     part.forEach(m=>indiv[m]=pp);
   } else if(S.splitMode==="fixed"){
     part.forEach(m=>indiv[m]=parseFloat(S.customSplits[m]||0));
+  } else if(S.splitMode==="portions"){
+    const tot=totalPortions();
+    const unitVal=amt/tot;
+    part.forEach(m=>indiv[m]=unitVal*parseFloat(S.customSplits[m]||1));
   } else {
     part.forEach(m=>indiv[m]=amt*(parseFloat(S.customSplits[m]||0)/100));
   }
@@ -355,6 +350,15 @@ function doSaveExpense() {
     if(Math.abs(total-amt)>1){alert("Los montos no suman "+clp(amt)+". Suma actual: "+clp(total));return;}
     part.forEach(m=>bal[m]-=indiv[m]);
     perPerson=amt/part.length;
+  } else if(S.splitMode==="portions"){
+    const tot=totalPortions();
+    const unitVal=amt/tot;
+    part.forEach(m=>{
+      const portions=parseFloat(($("cs_"+m)?.value||S.customSplits[m])||1);
+      indiv[m]=unitVal*portions;
+      bal[m]-=indiv[m];
+    });
+    perPerson=unitVal;
   } else if(S.splitMode==="percent"){
     let total=0;
     part.forEach(m=>{
@@ -376,8 +380,43 @@ function doSaveExpense() {
 
 function doSetSplitMode(mode){
   const customSplits={};
-  const g=grp(); if(g) g.members.forEach(m=>customSplits[m]="");
+  const g=grp(); if(g) g.members.forEach(m=>customSplits[m]=mode==="portions"?"1":"");
   go({splitMode:mode, customSplits});
+}
+
+function totalPortions() {
+  const g=grp(); if(!g) return 1;
+  const total = g.members.filter(m=>S.splits[m]).reduce((s,m)=>s+parseFloat(S.customSplits[m]||1),0);
+  return total || 1;
+}
+
+function updatePortionsTotal() {
+  const el = $("portions-total"); if(!el) return;
+  const amt = parseFloat($("ia")?.value||0);
+  const tot = totalPortions();
+  el.textContent = `Total: ${tot} porciones${amt ? " · "+clp(amt/tot)+" c/u" : ""}`;
+}
+
+function onPortionChange(inp) {
+  S.customSplits[inp.dataset.member] = inp.value;
+  refreshPortions();
+  refreshPreview();
+}
+
+function refreshPortions() {
+  if(S.splitMode !== "portions") return;
+  const g=grp(); if(!g) return;
+  const amt=parseFloat($("ia")?.value||0);
+  const tot=totalPortions();
+  const unit=tot?amt/tot:0;
+  g.members.filter(m=>S.splits[m]).forEach(m=>{
+    const mid=m.replace(/[^a-zA-Z0-9]/g,"_");
+    const el=document.getElementById("monto_"+mid);
+    const p=parseFloat(S.customSplits[m]||1);
+    if(el) el.textContent=amt&&unit?clp(unit*p):"—";
+  });
+  const ptEl=$("portions-total");
+  if(ptEl) ptEl.textContent="Total: "+tot+" porciones"+(amt&&unit?" · "+clp(unit)+" c/u":"");
 }
 
 function recalcSplits(changedInput) {
@@ -388,19 +427,16 @@ function recalcSplits(changedInput) {
   const part = g.members.filter(m => S.splits[m]);
   const name = changedInput.dataset.member;
 
-  // Mark this field as manually set (locked)
   if (!S._lockedSplits) S._lockedSplits = {};
   S._lockedSplits[name] = true;
   S.customSplits[name] = changedInput.value;
 
-  // Sum locked fields
   const maxVal = S.splitMode === "percent" ? 100 : amt;
   let lockedTotal = 0;
   part.forEach(m => {
     if (S._lockedSplits[m]) lockedTotal += parseFloat(S.customSplits[m] || 0);
   });
 
-  // Distribute remaining among unlocked fields
   const unlocked = part.filter(m => !S._lockedSplits[m]);
   if (unlocked.length > 0) {
     const remaining = Math.max(0, maxVal - lockedTotal);
@@ -412,7 +448,6 @@ function recalcSplits(changedInput) {
     });
   }
 
-  // Show status
   const total = part.reduce((s, m) => s + parseFloat(S.customSplits[m] || 0), 0);
   const diff = maxVal - total;
   const remEl = $("split-remaining");
@@ -427,7 +462,6 @@ function recalcSplits(changedInput) {
 }
 
 function doUpdateCustomSplit(name, val) {
-  // Save current value
   S.customSplits[name] = val;
 
   const g = grp(); if (!g) return;
@@ -437,14 +471,12 @@ function doUpdateCustomSplit(name, val) {
   const part = g.members.filter(m => S.splits[m]);
   const activeEl = document.activeElement;
 
-  // Calculate filled total from members that are NOT currently focused
   let filledTotal = 0;
   let emptyMembers = [];
   part.forEach(m => {
     const inp = $("cs_" + m);
     const isFocused = inp && inp === activeEl;
     if (isFocused) {
-      // This is the field being typed into — use its current value
       filledTotal += parseFloat(val || 0);
     } else {
       const v = parseFloat(S.customSplits[m] || 0);
@@ -453,7 +485,6 @@ function doUpdateCustomSplit(name, val) {
     }
   });
 
-  // Distribute remaining evenly among empty fields
   if (emptyMembers.length > 0) {
     const remaining = Math.max(0, (S.splitMode === "percent" ? 100 : amt) - filledTotal);
     const suggested = Math.round(remaining / emptyMembers.length);
@@ -464,7 +495,6 @@ function doUpdateCustomSplit(name, val) {
     });
   }
 
-  // Update remaining label
   const remEl = $("split-remaining");
   if (remEl) {
     let total = 0;
@@ -510,10 +540,10 @@ function doConfirmYes() {
   else doDeleteExpense(S.confirm.id);
 }
 
-
 function doTogglePayment(gid, from, to) {
   const key = gid + "_" + from + "_" + to;
   S.payments[key] = !S.payments[key];
+  saveData();
   const box = document.getElementById("settle-box");
   if (box) box.innerHTML = buildSettleRows(grp());
 }
@@ -543,7 +573,6 @@ function buildSettleRows(g) {
     </div>`;
   }).join("");
 }
-
 
 function doAddMemberToGroup() {
   const name = (document.getElementById("new-member-inp")?.value || "").trim();
@@ -580,13 +609,11 @@ function restoreSnap() {
     if($("gn"))  $("gn").value=S._snap.name;
     if($("gc"))  $("gc").value=S._snap.creator;
     S._snap.members.forEach((v,i)=>{ if($(`gm${i}`)) $(`gm${i}`).value=v; });
-    // show badge if creator has value
     if(S._snap.creator.trim()&&$("badge")){
       $("badge").style.display="flex";
       $("badge").querySelector("span").textContent=S._snap.creator+" — ya estás dentro ✓";
       $("badge-av").innerHTML=av(S._snap.creator,null,26);
     }
-    // Don't reset snap so it survives multiple add/removes
   }
 }
 
@@ -739,7 +766,7 @@ function drawNewExpense() {
       <div class="lbl mt">Monto (CLP)</div>
       <div class="inp-wrap">
         <span class="inp-prefix">$</span>
-        <input type="number" id="ia" placeholder="0" oninput="refreshPreview()">
+        <input type="number" id="ia" placeholder="0" oninput="refreshPreview();refreshPortions()">
       </div>
 
       <div class="lbl mt">Fecha</div>
@@ -770,17 +797,43 @@ function drawNewExpense() {
       </div>
 
       <div class="lbl mt">Tipo de división</div>
-      <div style="display:flex;gap:8px">
-        ${[["equal","Equitativo"],["fixed","Monto fijo"],["percent","Porcentaje"]].map(([mode,lbl])=>{
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${[["equal","Equitativo"],["portions","Por porciones"],["fixed","Monto fijo"],["percent","Porcentaje"]].map(([mode,lbl])=>{
           const on=S.splitMode===mode;
           return `<button onclick="doSetSplitMode('${mode}')"
-            style="flex:1;padding:9px 4px;border-radius:12px;border:2px solid ${on?"var(--mint)":"var(--border)"};
+            style="flex:1;min-width:calc(50% - 4px);padding:9px 4px;border-radius:12px;border:2px solid ${on?"var(--mint)":"var(--border)"};
             background:${on?"var(--mint-l)":"#fff"};color:${on?"var(--mint)":"var(--light)"};
             font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">${lbl}</button>`;
         }).join("")}
       </div>
 
-      ${S.splitMode!=="equal"?`<div style="background:var(--mint-l);border-radius:13px;padding:12px;border:1px solid var(--mint-m);margin-top:8px">
+      ${S.splitMode==="portions"?`<div style="background:var(--mint-l);border-radius:13px;padding:12px;border:1px solid var(--mint-m);margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div class="section-lbl mint" style="margin-bottom:0">Porciones por persona</div>
+          <div style="font-size:11px;color:var(--mint);font-weight:800" id="portions-total">Total: ${totalPortions()} porciones</div>
+        </div>
+        ${g.members.filter(m=>S.splits[m]).map(m=>{
+          const portions=parseFloat(S.customSplits[m]||1);
+          const amt=parseFloat(($("ia")?.value)||0);
+          const tot=totalPortions();
+          const unitVal=amt&&tot?amt/tot:0;
+          const monto=unitVal?clp(unitVal*portions):"—";
+          const mid=m.replace(/[^a-zA-Z0-9]/g,"_");
+          return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            ${av(m,g,28)}
+            <div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${m}</div>
+            <div id="monto_${mid}" style="font-size:12px;color:var(--mid);font-weight:800;margin-right:4px">${monto}</div>
+            <input type="number" id="cs_${m}" data-member="${m}"
+              placeholder="1" value="${portions}" min="0" step="1" autocomplete="off"
+              oninput="onPortionChange(this)"
+              style="width:60px;background:#fff;border:1.5px solid var(--border);border-radius:10px;
+              padding:8px;font-size:14px;font-family:inherit;color:var(--text);outline:none;text-align:center;
+              -webkit-user-select:text;user-select:text">
+          </div>`;
+        }).join("")}
+      </div>`:""}
+
+      ${S.splitMode!=="equal"&&S.splitMode!=="portions"?`<div style="background:var(--mint-l);border-radius:13px;padding:12px;border:1px solid var(--mint-m);margin-top:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div class="section-lbl mint" style="margin-bottom:0">${S.splitMode==="fixed"?"Monto por persona":"% por persona"}</div>
           <div id="split-remaining" style="font-size:11px;font-weight:800;color:var(--light)">Ingresa los montos</div>
@@ -843,7 +896,7 @@ function drawDetail() {
       </div>
       <div class="det-card last">
         <div class="section-lbl mint" style="margin-bottom:10px">
-          ${e.splitMode==="fixed"?"Monto fijo":e.splitMode==="percent"?"Por porcentaje":"División equitativa · "+clp(e.perPerson)+" c/u"}
+          ${e.splitMode==="fixed"?"Monto fijo":e.splitMode==="percent"?"Por porcentaje":e.splitMode==="portions"?"Por porciones":"División equitativa · "+clp(e.perPerson)+" c/u"}
         </div>
         ${g.members.map(m=>{
           const b=e.balances[m];
@@ -862,7 +915,6 @@ function drawDetail() {
     </div>
   </div>`;
 }
-
 
 function drawAddMember() {
   const g = grp(); if (!g) return drawGroup();
@@ -891,8 +943,6 @@ function drawAddMember() {
   </div>`;
 }
 
-
-// Global delegated input handler for split fields
 document.addEventListener("input", function(e) {
   if (e.target && e.target.dataset && e.target.dataset.split === "true") {
     recalcSplits(e.target);
@@ -900,6 +950,7 @@ document.addEventListener("input", function(e) {
 });
 
 // ── Boot ─────────────────────────────────────────────────
+loadData();
 draw();
 </script>
 </body>
